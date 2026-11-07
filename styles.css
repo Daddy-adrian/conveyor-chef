@@ -1,0 +1,2413 @@
+/* styles.css - The Conveyor Chef: 2D Contiguous Kitchen Room Scene */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700;800&display=swap');
+
+:root {
+  --font-main: 'Fredoka', 'Quicksand', system-ui, -apple-system, sans-serif;
+
+  /* Room Colors */
+  --wall-bg: #f9f1e4;
+  --wall-tile: #ffffff;
+  --wall-grout: rgba(215, 190, 160, 0.4);
+  --floor-wood-1: #c68a4c;
+  --floor-wood-2: #ab7135;
+  --baseboard-wood: #7c4d22;
+
+  /* Metals & Woods */
+  --steel-light: #f5f6fa;
+  --steel-mid: #dcdde1;
+  --steel-dark: #718093;
+  --oak-wood: linear-gradient(180deg, #d89e63 0%, #ba7f43 100%);
+  --cabinet-white: #ffffff;
+  --cabinet-shade: #f0ece1;
+  --cardboard-kraft: #c8965d;
+
+  /* Accents */
+  --chef-gold: #f39c12;
+  --chef-coral: #e74c3c;
+  --chef-green: #2ecc71;
+  --text-dark: #2c3e50;
+  --text-muted: #7f8c8d;
+
+  /* Conveyor Belt */
+  --belt-chassis: #2f3640;
+  --belt-tread: #1e222a;
+  --hazard-yellow: #f1c40f;
+  --hazard-dark: #2d3436;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --belt-speed-duration: 12s;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--wall-bg);
+  color: var(--text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main Game Application Viewport */
+.game-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 10px 14px;
+  position: relative;
+}
+
+/* =========================================
+   HEADER BAR (Orders & Score)
+   ========================================= */
+.header-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 253, 249, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 3px solid #eed9c4;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  box-shadow: 0 4px 14px rgba(78, 52, 30, 0.1);
+  z-index: 20;
+  width: 100%;
+}
+
+.header-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.xp-container {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  gap: 4px;
+}
+
+.xp-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #b33939;
+}
+
+.xp-bar-track {
+  width: 100%;
+  height: 14px;
+  background: #f1dfcf;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+  border: 1.5px solid #dfc3aa;
+}
+
+.xp-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #00b894);
+  border-radius: 20px;
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.score-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 5px 18px;
+  border-radius: 30px;
+  border: 2.5px solid #f9ca24;
+  box-shadow: 0 4px 10px rgba(249, 202, 36, 0.25);
+}
+
+/* Real-Time Multiplayer Network Status Pill Badge */
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.3px;
+  border: 2px solid transparent;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.network-badge .badge-dot {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.network-badge.status-solo {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.network-badge.status-hosting {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+  animation: pulseHosting 2s infinite ease-in-out;
+}
+
+.network-badge.status-connecting {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+  animation: pulseHosting 1.5s infinite ease-in-out;
+}
+
+.network-badge.status-connected {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
+}
+
+.network-badge.status-disconnected {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+@keyframes pulseHosting {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.88; }
+}
+
+.score-label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #d35400;
+}
+
+.score-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #2c3e50;
+}
+
+/* Mission Container Banner */
+.mission-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #fffdf8 0%, #fff7e6 100%);
+  border: 3px solid #f39c12;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  width: 100%;
+  box-shadow: 0 6px 18px rgba(243, 156, 18, 0.25);
+}
+
+.replay-audio-btn {
+  background: linear-gradient(135deg, #f1c40f, #e67e22);
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.replay-audio-btn:hover {
+  transform: scale(1.1);
+}
+
+.replay-audio-btn:active {
+  transform: scale(0.95);
+}
+
+.mission-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.mission-badge {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #d35400;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.mission-text {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #2c3e50;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  line-height: 1.3;
+}
+
+.mission-word {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.mission-word.active-word,
+.mission-word.active-reading {
+  background-color: #f9ca24;
+  color: #b33939;
+  transform: scale(1.14);
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(249, 202, 36, 0.65);
+  animation: readingPulse 0.4s ease-in-out alternate infinite;
+}
+
+@keyframes readingPulse {
+  0% { transform: scale(1.1); }
+  100% { transform: scale(1.18); }
+}
+
+.mission-progress {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #27ae60;
+}
+
+/* =========================================
+   PLAY AREA: 2D CONTIGUOUS KITCHEN ROOM SCENE
+   ========================================= */
+.play-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+  margin-top: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.kitchen-scene {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(68, 44, 25, 0.18);
+  border: 3px solid #eed9c4;
+}
+
+/* Upper Half: Tiled Kitchen Wall */
+.kitchen-wall {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52%;
+  background-color: #f8efe1;
+  overflow: hidden;
+}
+
+.wall-tile-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(to right, rgba(200, 175, 145, 0.35) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(200, 175, 145, 0.35) 1.5px, transparent 1.5px);
+  background-size: 60px 30px;
+}
+
+.wall-ambient-light {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 240, 200, 0.7) 0%, rgba(255, 245, 225, 0.25) 55%, transparent 80%);
+  pointer-events: none;
+}
+
+.wall-decor {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 30px;
+  pointer-events: none;
+}
+
+.wall-clock {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #d35400;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.clock-face {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.clock-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  background: #2c3e50;
+  transform-origin: bottom center;
+  border-radius: 2px;
+}
+
+.hand-hour {
+  width: 2px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.hand-minute {
+  width: 1.5px;
+  height: 14px;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.hanging-shelf {
+  background: #8c5828;
+  border-radius: 4px;
+  padding: 3px 14px;
+  display: flex;
+  gap: 12px;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  border-bottom: 2px solid #5d3a1a;
+}
+
+/* Room Perspective Baseboard Horizon */
+.room-baseboard {
+  position: absolute;
+  top: 52%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #6e431f 0%, #4a2d14 100%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+}
+
+/* Lower Half: Wooden Parquet Floor */
+.kitchen-floor {
+  position: absolute;
+  top: 52%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #b87b3e 0%, #9e642a 100%);
+}
+
+.parquet-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      rgba(80, 45, 15, 0.2) 0px,
+      rgba(80, 45, 15, 0.2) 1.5px,
+      transparent 1.5px,
+      transparent 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(80, 45, 15, 0.15) 0px,
+      rgba(80, 45, 15, 0.15) 1.5px,
+      transparent 1.5px,
+      transparent 64px
+    );
+  opacity: 0.7;
+}
+
+/* =========================================
+   FURNITURE STAGE (Contiguous Room Placement)
+   ========================================= */
+.furniture-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+  z-index: 5;
+}
+
+/* Generic Furniture Piece */
+.furniture-piece {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.25s ease;
+}
+
+.furniture-piece:hover {
+  transform: translateY(-3px);
+}
+
+/* Discreet Furniture Nameplate Tabs */
+.furniture-header-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid #d5c4b1;
+  border-radius: 14px;
+  padding: 2px 9px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  z-index: 12;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.tab-title {
+  font-weight: 800;
+  font-size: 0.84rem;
+  color: #2c3e50;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+}
+
+.zone-speak-btn {
+  background: #fdfaf6;
+  border: 1px solid #eed9c4;
+  font-size: 0.72rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.zone-speak-btn:hover {
+  transform: scale(1.18);
+  background: #f1c40f;
+}
+
+/* Specific Tab Positioning across Kitchen Furniture */
+.tab-fridge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-sink {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-table-on {
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  white-space: nowrap;
+}
+
+.tab-plate {
+  position: absolute;
+  top: -14px;
+  right: 2px;
+  white-space: nowrap;
+}
+
+.tab-table-under {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-cabinet-behind {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-cabinet-in {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-box {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tab-shelf {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Floor Shadow for realistic grounding */
+.floor-shadow {
+  position: absolute;
+  bottom: -6px;
+  left: 5%;
+  width: 90%;
+  height: 12px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(40, 20, 5, 0.45) 0%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Shared placed-item style inside furniture cavities */
+.zone-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.placed-item {
+  background: #ffffff;
+  border: 2px solid #f9ca24;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.placed-item svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Target Zone Hint */
+.furniture-piece.zone-target,
+.drop-zone.zone-target {
+  filter: drop-shadow(0 0 16px rgba(243, 156, 18, 0.95)) !important;
+}
+
+/* Drag-Over Glow */
+.furniture-piece.drag-over,
+.drop-zone.drag-over {
+  filter: drop-shadow(0 0 22px rgba(46, 204, 113, 0.98)) !important;
+}
+
+/* Wrong Drop Shake */
+.furniture-piece.zone-wrong,
+.drop-zone.zone-wrong {
+  animation: roomFurnitureWobble 0.45s ease-in-out;
+}
+
+@keyframes roomFurnitureWobble {
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-8px) rotate(-1deg); }
+  50% { transform: translateX(8px) rotate(1deg); }
+}
+
+/* =========================================
+   1. REFRIGERATOR (Left Floor)
+   ========================================= */
+.furniture-fridge {
+  width: 145px;
+  height: 250px;
+  z-index: 6;
+}
+
+.fridge-cabinet-3d {
+  width: 100%;
+  height: 100%;
+  background: #718093;
+  border-radius: 12px 12px 6px 6px;
+  border: 3px solid #2f3542;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: visible;
+  perspective: 900px;
+}
+
+/* Illuminated Inner Cavity */
+.fridge-interior {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 9px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 18px rgba(33, 150, 243, 0.35);
+  z-index: 1;
+}
+
+.fridge-interior-light {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 5px;
+  background: #ffffff;
+  border-radius: 3px;
+  box-shadow: 0 0 8px #00d2d3;
+}
+
+.fridge-shelf-line {
+  display: flex;
+  justify-content: space-around;
+  border-bottom: 2px solid rgba(100, 160, 220, 0.4);
+  padding-bottom: 4px;
+  font-size: 1.1rem;
+}
+
+.silhouette-food {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
+/* 3D Door on Pivot */
+.fridge-door-pivot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  pointer-events: none;
+  perspective: 800px;
+}
+
+.fridge-door-panel {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f5f6fa 0%, #dcdde1 60%, #b2bec3 100%);
+  border: 3px solid #718093;
+  border-radius: 12px 12px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), 2px 0 8px rgba(0,0,0,0.25);
+}
+
+.freezer-compartment {
+  height: 32%;
+  border-bottom: 2px solid #2f3542;
+  padding: 6px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.digital-temp-gauge {
+  background: #1e272e;
+  color: #00d2d3;
+  font-family: monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid #485460;
+}
+
+.fridge-main-door {
+  flex: 1;
+  position: relative;
+  padding: 8px;
+}
+
+.water-dispenser-recess {
+  width: 24px;
+  height: 38px;
+  background: #2f3542;
+  border-radius: 4px;
+  border: 1px solid #718093;
+}
+
+.long-metallic-handle {
+  position: absolute;
+  top: 15%;
+  right: 8px;
+  width: 6px;
+  height: 55%;
+  background: linear-gradient(90deg, #ffffff 0%, #7f8c8d 100%);
+  border-radius: 3px;
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Door Swing Open Trigger */
+.furniture-fridge.open-door .fridge-door-panel,
+.furniture-fridge.drag-over .fridge-door-panel {
+  transform: perspective(800px) rotateY(-105deg);
+}
+
+/* =========================================
+   2. COUNTERTOP WITH SINK (Left-Center)
+   ========================================= */
+.furniture-sink {
+  width: 175px;
+  height: 205px;
+  z-index: 5;
+}
+
+.counter-assembly {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.granite-countertop {
+  height: 78px;
+  background: linear-gradient(180deg, #dfe4ea 0%, #ced6e0 100%);
+  border: 3px solid #747d8c;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.faucet-fixture {
+  position: absolute;
+  top: -24px;
+  left: 10px;
+  z-index: 5;
+}
+
+.water-drop-anim {
+  animation: dripDrop 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes dripDrop {
+  0% { transform: translateY(0); opacity: 0.9; }
+  60% { transform: translateY(18px); opacity: 0.9; }
+  80% { transform: translateY(22px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+.stainless-basin {
+  width: 90%;
+  height: 58px;
+  background: linear-gradient(180deg, #d2d7d9 0%, #b0bec5 100%);
+  border-radius: 12px;
+  border: 2px solid #78909c;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.basin-drain-ring {
+  position: absolute;
+  bottom: 6px;
+  width: 18px;
+  height: 10px;
+  background: #37474f;
+  border-radius: 50%;
+  border: 2px solid #90a4ae;
+}
+
+.counter-cupboard-base {
+  flex: 1;
+  background: #576574;
+  border: 3px solid #222f3e;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.counter-drawer-row {
+  height: 18px;
+  border-bottom: 2px solid #222f3e;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.drawer-handle {
+  width: 22px;
+  height: 3px;
+  background: #c8d6e5;
+  border-radius: 2px;
+}
+
+.under-sink-cupboards {
+  flex: 1;
+  display: flex;
+  gap: 2px;
+  padding-top: 3px;
+}
+
+.sink-cupboard-door {
+  flex: 1;
+  background: #485460;
+  border: 1.5px solid #222f3e;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.door-left { justify-content: flex-end; padding-right: 4px; }
+.door-right { justify-content: flex-start; padding-left: 4px; }
+
+.small-knob {
+  width: 6px;
+  height: 6px;
+  background: #f1c40f;
+  border-radius: 50%;
+}
+
+/* =========================================
+   3. LARGE DINING TABLE & EMBEDDED PLATE (Center)
+   ========================================= */
+.furniture-table {
+  width: 310px;
+  height: 225px;
+  z-index: 7;
+  position: relative;
+}
+
+.table-construction {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tabletop-beveled-slab {
+  background: var(--oak-wood);
+  border: 3.5px solid #7c4d22;
+  border-radius: 12px;
+  height: 90px;
+  box-shadow: 0 8px 16px rgba(60, 30, 10, 0.35);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.tabletop-runner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8%;
+  right: 48%;
+  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 8px, #e74c3c 8px, #e74c3c 16px);
+  opacity: 0.35;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.tabletop-items-container {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  z-index: 5;
+}
+
+/* EMBEDDED BISTRO PLATE (in) */
+.embedded-plate-zone {
+  width: 115px;
+  height: 72px;
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.embedded-plate-zone:hover,
+.embedded-plate-zone.drag-over,
+.embedded-plate-zone.open-door {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 14px rgba(241, 196, 15, 0.9));
+}
+
+.bistro-checkered-placemat {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #ff6b6b 0px,
+    #ff6b6b 8px,
+    #ffffff 8px,
+    #ffffff 16px
+  );
+  border-radius: 10px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 2px 6px;
+}
+
+.fine-china-plate {
+  width: 68px;
+  height: 50px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.gold-rimmed-edge {
+  width: 90%;
+  height: 88%;
+  border-radius: 50%;
+  border: 2px solid #f1c40f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 50%, #ffffff 0%, #f1f2f6 100%);
+}
+
+.platter-well-center {
+  width: 80%;
+  height: 75%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-cutlery {
+  width: 4px;
+  height: 26px;
+  background: #bdc3c7;
+  border-radius: 2px;
+}
+
+/* Legs & Under-Table Area */
+.table-legs-chassis {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 0 18px;
+  position: relative;
+}
+
+.sturdy-table-leg {
+  width: 22px;
+  height: 100%;
+  background: linear-gradient(90deg, #b27b46 0%, #7c4d22 100%);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 2px 4px 8px rgba(0,0,0,0.25);
+}
+
+.under-table-drop-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 85%, rgba(40, 20, 5, 0.3) 0%, transparent 75%);
+  margin: 4px 10px 0 10px;
+  border: 2px dashed rgba(180, 130, 80, 0.45);
+  border-radius: 8px;
+  padding-bottom: 24px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.under-table-drop-area:hover,
+.under-table-drop-area.drag-over,
+.under-table-drop-area.zone-target {
+  background: rgba(241, 196, 15, 0.25);
+  border-color: #f1c40f;
+  filter: drop-shadow(0 0 12px rgba(241, 196, 15, 0.9));
+}
+
+.zone-items-under-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================
+   4. TALL PANTRY CABINET (Right Side)
+   ========================================= */
+.furniture-cabinet {
+  width: 165px;
+  height: 260px;
+  z-index: 6;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Behind Cabinet Drop Area */
+.cabinet-behind-drop-area {
+  position: absolute;
+  top: -24px;
+  left: 6px;
+  right: 6px;
+  height: 65px;
+  background: linear-gradient(180deg, rgba(44, 62, 80, 0.45) 0%, rgba(44, 62, 80, 0.12) 100%);
+  border: 2px dashed #7f8c8d;
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 14px;
+  transition: all 0.25s ease;
+}
+
+.cabinet-behind-drop-area:hover,
+.cabinet-behind-drop-area.drag-over,
+.cabinet-behind-drop-area.zone-target {
+  background: rgba(241, 196, 15, 0.25);
+  border-color: #f1c40f;
+  filter: drop-shadow(0 0 12px rgba(241, 196, 15, 0.9));
+}
+
+.behind-cabinet-shadow-cavity {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cabinet-pantry-3d {
+  width: 100%;
+  height: 220px;
+  background: #ffffff;
+  border: 3.5px solid #dcdde1;
+  border-radius: 10px 10px 4px 4px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  position: relative;
+  perspective: 900px;
+  z-index: 4;
+  transition: filter 0.25s ease;
+}
+
+.cabinet-pantry-3d:hover,
+.cabinet-pantry-3d.drag-over,
+.cabinet-pantry-3d.zone-target {
+  filter: drop-shadow(0 0 16px rgba(46, 204, 113, 0.9));
+}
+
+.cabinet-top-cornice {
+  height: 12px;
+  background: #f1f2f6;
+  border-bottom: 2px solid #ced6e0;
+}
+
+/* Inner Pantry Cavity */
+.cabinet-inner-cavity {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f7f1e3;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.18);
+  z-index: 1;
+}
+
+.pantry-shelf-row {
+  display: flex;
+  justify-content: space-around;
+  border-bottom: 2px solid #d1ccc0;
+  padding-bottom: 2px;
+  font-size: 1.1rem;
+}
+
+.pantry-silhouette {
+  opacity: 0.6;
+}
+
+/* Double Shaker Doors on Outward 3D Swing */
+.cabinet-shaker-doors {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  pointer-events: none;
+  z-index: 5;
+  perspective: 900px;
+}
+
+.shaker-door-half {
+  flex: 1;
+  background: #ffffff;
+  border: 2px solid #dcdde1;
+  padding: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.door-left {
+  border-right: 1.5px solid #bdc3c7;
+  transform-origin: left center;
+}
+
+.door-right {
+  border-left: 1.5px solid #bdc3c7;
+  justify-content: flex-end;
+  transform-origin: right center;
+}
+
+.recessed-inner-panel {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #e4e7ea;
+  border-radius: 4px;
+  background: #fdfefe;
+}
+
+.brass-door-knob {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle at 35% 35%, #f1c40f 0%, #b7950b 100%);
+  border-radius: 50%;
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+}
+
+.knob-left { right: 6px; }
+.knob-right { left: 6px; }
+
+/* Cabinet Doors Swing Open */
+#zone-cabinet_in.open-door .door-left,
+#zone-cabinet_in.drag-over .door-left,
+.furniture-cabinet.open-door .door-left,
+.furniture-cabinet.drag-over .door-left {
+  transform: perspective(800px) rotateY(-110deg);
+}
+
+#zone-cabinet_in.open-door .door-right,
+#zone-cabinet_in.drag-over .door-right,
+.furniture-cabinet.open-door .door-right,
+.furniture-cabinet.drag-over .door-right {
+  transform: perspective(800px) rotateY(110deg);
+}
+
+.cabinet-floor-nook {
+  height: 12px;
+}
+
+/* =========================================
+   LARGE KITCHEN WALL SHELF (Upper Right Wall)
+   ========================================= */
+.wall-shelf-station {
+  position: absolute;
+  top: 14px;
+  right: 40px;
+  width: 290px;
+  min-height: 80px;
+  z-index: 6;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.wall-shelf-station:hover,
+.wall-shelf-station.drag-over,
+.wall-shelf-station.zone-target {
+  filter: drop-shadow(0 0 18px rgba(243, 156, 18, 0.95)) !important;
+  transform: translateY(-2px);
+}
+
+.shelf-board-construction {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-top: 8px;
+}
+
+.shelf-items-surface {
+  width: 95%;
+  min-height: 42px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px 4px;
+  position: relative;
+  z-index: 3;
+}
+
+.shelf-ambience-jar {
+  font-size: 1.15rem;
+  opacity: 0.75;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  user-select: none;
+}
+
+.shelf-wooden-plank {
+  width: 100%;
+  height: 14px;
+  background: linear-gradient(180deg, #b27b46 0%, #8c5828 70%, #5d3a1a 100%);
+  border: 2px solid #4a2d14;
+  border-radius: 4px;
+  box-shadow: 0 6px 14px rgba(40, 20, 5, 0.35);
+  position: relative;
+  z-index: 2;
+}
+
+.shelf-wooden-plank::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 1px;
+}
+
+.shelf-brackets-row {
+  width: 80%;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.shelf-bracket {
+  width: 12px;
+  height: 22px;
+  background: linear-gradient(90deg, #718093 0%, #2f3542 100%);
+  clip-path: polygon(0% 0%, 100% 0%, 25% 100%, 0% 100%);
+  border-radius: 0 0 2px 2px;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.bracket-right {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 75% 100%);
+}
+
+/* =========================================
+   5. DELIVERY BOX (Floor Right Side)
+   ========================================= */
+.furniture-box {
+  width: 135px;
+  height: 145px;
+  z-index: 7;
+  position: relative;
+}
+
+.delivery-box-3d {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  perspective: 800px;
+}
+
+.box-flap {
+  position: absolute;
+  background: #b58351;
+  border: 1px solid #8e5d2d;
+  transition: transform 0.35s ease;
+  z-index: 4;
+}
+
+.flap-rear {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+  transform-origin: bottom center;
+}
+
+.flap-left {
+  top: 14px;
+  left: 0;
+  width: 14px;
+  height: 40px;
+  clip-path: polygon(0% 10%, 100% 0%, 100% 100%, 0% 90%);
+  transform-origin: right center;
+}
+
+.flap-right {
+  top: 14px;
+  right: 0;
+  width: 14px;
+  height: 40px;
+  clip-path: polygon(0% 0%, 100% 10%, 0% 90%, 0% 100%);
+  transform-origin: left center;
+}
+
+.box-inner-basket {
+  flex: 1;
+  background: #8e5d2d;
+  box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  position: relative;
+  z-index: 2;
+  margin-top: 14px;
+}
+
+.box-front-panel {
+  height: 48px;
+  background: linear-gradient(180deg, #cf9761 0%, #b8824c 100%);
+  border-top: 3px solid #8e5d2d;
+  border-radius: 0 0 10px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  box-shadow: 0 6px 12px rgba(92, 59, 29, 0.3);
+  position: relative;
+  z-index: 6;
+}
+
+.box-tape-strip {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 100%;
+  background: rgba(220, 185, 140, 0.65);
+  border-left: 1px dashed rgba(140, 100, 60, 0.4);
+  border-right: 1px dashed rgba(140, 100, 60, 0.4);
+}
+
+.box-shipping-stamp {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #c0392b;
+  border: 1.5px dashed #c0392b;
+  padding: 1px 5px;
+  border-radius: 4px;
+  transform: rotate(-3deg);
+}
+
+.flap-front {
+  top: -12px;
+  left: 20%;
+  right: 20%;
+  height: 14px;
+  clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%);
+  transform-origin: bottom center;
+}
+
+/* Box Flaps Fold Open */
+.delivery-box-station.open-door .flap-rear,
+.delivery-box-station.drag-over .flap-rear,
+.furniture-box.open-door .flap-rear,
+.furniture-box.drag-over .flap-rear {
+  transform: rotateX(110deg);
+}
+.delivery-box-station.open-door .flap-front,
+.delivery-box-station.drag-over .flap-front,
+.furniture-box.open-door .flap-front,
+.furniture-box.drag-over .flap-front {
+  transform: rotateX(-100deg);
+}
+.delivery-box-station.open-door .flap-left,
+.delivery-box-station.drag-over .flap-left,
+.furniture-box.open-door .flap-left,
+.furniture-box.drag-over .flap-left {
+  transform: rotateY(-90deg);
+}
+.delivery-box-station.open-door .flap-right,
+.delivery-box-station.drag-over .flap-right,
+.furniture-box.open-door .flap-right,
+.furniture-box.drag-over .flap-right {
+  transform: rotateY(90deg);
+}
+
+/* =========================================
+   AUTHENTIC RESTAURANT CONVEYOR BELT
+   ========================================= */
+.conveyor-section {
+  position: relative;
+  background: var(--belt-chassis);
+  border-radius: var(--radius-md);
+  padding: 5px 12px 8px;
+  box-shadow: 0 10px 24px rgba(30, 39, 46, 0.4);
+  min-height: 135px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 3px solid #1e272e;
+}
+
+.conveyor-hazard-strip {
+  height: 9px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hazard-yellow),
+    var(--hazard-yellow) 14px,
+    var(--hazard-dark) 14px,
+    var(--hazard-dark) 28px
+  );
+  border-radius: 4px;
+  margin-bottom: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.conveyor-chassis {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #1e272e;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.gear-casing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.gear-svg {
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+}
+
+.conveyor-belt {
+  position: relative;
+  flex: 1;
+  height: 90px;
+  background: var(--belt-tread);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.6);
+  border-top: 3px solid #000;
+  border-bottom: 3px solid #000;
+}
+
+.conveyor-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    #2f3640,
+    #2f3640 32px,
+    #1e222a 32px,
+    #1e222a 64px
+  );
+  animation: beltMove var(--belt-speed-duration) linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes beltMove {
+  from { background-position: 0 0; }
+  to { background-position: 1000px 0; }
+}
+
+.conveyor-belt.paused .conveyor-track {
+  animation-play-state: paused;
+}
+
+.conveyor-items {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.conveyor-bottom-casing {
+  margin-top: 3px;
+  display: flex;
+  justify-content: center;
+}
+
+.rivets-row {
+  display: flex;
+  gap: 30px;
+}
+
+.rivet {
+  width: 7px;
+  height: 7px;
+  background: #718093;
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 2px #f5f6fa, 1px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   DRAGGABLE ITEM CARDS
+   ========================================= */
+.item-card {
+  pointer-events: auto;
+  position: absolute;
+  top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #fffbf2 100%);
+  border: 2.5px solid #eed9c4;
+  color: var(--text-dark);
+  padding: 5px 8px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  width: 76px;
+  height: 76px;
+}
+
+.item-card:hover {
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35);
+  border-color: #f39c12;
+}
+
+.item-card.is-dragging {
+  cursor: grabbing;
+  opacity: 0.98;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.item-card.label-glow .item-label {
+  background: #f9ca24;
+  color: #b33939;
+  box-shadow: 0 0 14px rgba(249, 202, 36, 0.95);
+  transform: scale(1.15);
+}
+
+.item-icon {
+  font-size: 2.1rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-icon svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+.item-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  margin-top: 2px;
+  background: #f1f2f6;
+  color: #2f3542;
+  padding: 2px 8px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+/* =========================================
+   FLOATING CONTROL PANEL
+   ========================================= */
+.control-panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(255, 253, 249, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #eed9c4;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(68, 44, 25, 0.2);
+  z-index: 50;
+  min-width: 195px;
+}
+
+.control-header {
+  border-bottom: 2px solid #f1dfcf;
+  padding-bottom: 3px;
+}
+
+.control-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #d35400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.control-slider {
+  width: 100%;
+  accent-color: #e67e22;
+  cursor: pointer;
+  height: 5px;
+}
+
+.play-pause-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: #ffffff;
+  border: none;
+  padding: 8px 12px;
+  font-weight: 800;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.play-pause-btn:hover {
+  transform: translateY(-1px);
+}
+
+.play-pause-btn.paused {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.35);
+}
+
+/* =========================================
+   OVERLAYS (START & PAUSE)
+   ========================================= */
+.start-overlay,
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(45, 52, 54, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.start-overlay.hidden,
+.pause-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.pause-card {
+  background: #ffffff;
+  border: 4px solid #f39c12;
+  border-radius: var(--radius-lg);
+  padding: 36px 44px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 460px;
+}
+
+/* =========================================
+   MULTIPLAYER LOBBY MODAL STYLING
+   ========================================= */
+.lobby-card {
+  background: #ffffff;
+  border: 4px solid #f39c12;
+  border-radius: var(--radius-lg);
+  padding: 32px 36px;
+  text-align: center;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 860px;
+  width: 94%;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.lobby-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lobby-view.hidden {
+  display: none !important;
+}
+
+.lobby-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.lobby-option-box {
+  background: #fffcf8;
+  border: 2px solid #ecd9c4;
+  border-radius: var(--radius-md);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  position: relative;
+  min-height: 255px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.lobby-option-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(180, 110, 30, 0.16);
+  border-color: #f39c12;
+}
+
+.lobby-option-box.highlight-box {
+  background: linear-gradient(180deg, #fffcf5 0%, #fff7eb 100%);
+  border: 3px solid #f39c12;
+  box-shadow: 0 6px 18px rgba(243, 156, 18, 0.2);
+}
+
+.option-badge {
+  position: absolute;
+  top: -12px;
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  box-shadow: 0 2px 6px rgba(211, 84, 0, 0.35);
+}
+
+.option-icon {
+  font-size: 2.8rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.option-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.option-desc {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 6px 0 14px;
+  flex-grow: 1;
+}
+
+.lobby-btn {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lobby-btn:hover {
+  transform: scale(1.03);
+}
+
+.lobby-btn:active {
+  transform: scale(0.97);
+}
+
+.btn-solo {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(52, 152, 219, 0.35);
+}
+
+.btn-solo:hover {
+  box-shadow: 0 6px 18px rgba(52, 152, 219, 0.5);
+}
+
+.btn-host {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(230, 126, 34, 0.4);
+}
+
+.btn-host:hover {
+  box-shadow: 0 6px 20px rgba(230, 126, 34, 0.55);
+}
+
+.btn-join {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.35);
+  width: auto;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+}
+
+.btn-join:hover {
+  box-shadow: 0 6px 18px rgba(39, 174, 96, 0.5);
+}
+
+.btn-secondary {
+  background: #f1f2f6;
+  color: #2f3542;
+  border: 2px solid #ced6e0;
+  width: auto;
+  padding: 10px 22px;
+}
+
+.btn-secondary:hover {
+  background: #e4e7eb;
+}
+
+.join-input-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+.lobby-code-input {
+  flex-grow: 1;
+  width: 90px;
+  font-family: monospace, inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 9px 8px;
+  border: 2.5px solid #bdc3c7;
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: #ffffff;
+  color: #2c3e50;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lobby-code-input:focus {
+  border-color: #27ae60;
+  box-shadow: 0 0 10px rgba(39, 174, 96, 0.3);
+}
+
+.lobby-error-msg {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin-top: 6px;
+}
+
+.lobby-error-msg.hidden,
+.lobby-error-box.hidden {
+  display: none !important;
+}
+
+.lobby-error-box {
+  background: #ffeaa7;
+  border: 2px solid #e17055;
+  color: #d63031;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin: 6px 0;
+}
+
+/* Room Code Card (Host View) */
+.room-code-display-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #fef9e7;
+  border: 3px dashed #f39c12;
+  border-radius: var(--radius-md);
+  padding: 18px 36px;
+  margin: 10px 0;
+}
+
+/* WhatsApp 1-Click Invite Card */
+.whatsapp-invite-card {
+  width: 100%;
+  background: #f0fdf4;
+  border: 2.5px solid #22c55e;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 6px 0 12px;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.15);
+}
+
+.invite-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.invite-badge {
+  background: #25d366;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.room-code-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.room-code-badge strong {
+  font-family: monospace, inherit;
+  font-size: 1.1rem;
+  letter-spacing: 1.5px;
+}
+
+.invite-link-row {
+  width: 100%;
+}
+
+.invite-link-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1.5px solid #86efac;
+  border-radius: var(--radius-sm);
+  font-family: monospace, inherit;
+  font-size: 0.88rem;
+  color: #1e293b;
+  outline: none;
+  user-select: all;
+  box-sizing: border-box;
+}
+
+.invite-buttons-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-whatsapp {
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  font-size: 0.95rem;
+  flex: 2;
+}
+
+.btn-whatsapp:hover {
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-wa-direct {
+  background: #ffffff;
+  color: #128c7e;
+  border: 2px solid #25d366;
+  text-decoration: none;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.btn-wa-direct:hover {
+  background: #e8f5e9;
+  transform: translateY(-2px);
+}
+
+.copy-feedback-toast {
+  background: #22c55e;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.86rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  animation: fadeInDown 0.25s ease;
+}
+
+.copy-feedback-toast.hidden {
+  display: none !important;
+}
+
+/* Auto-Join Landing Card */
+.autojoin-card {
+  background: #fffcf8;
+  border: 3px solid #f39c12;
+  border-radius: var(--radius-md);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 10px 0;
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.15);
+}
+
+.autojoin-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.autojoin-note {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.btn-autojoin {
+  background: linear-gradient(135deg, #2ecc71, #00b894);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding: 15px 36px;
+  box-shadow: 0 8px 24px rgba(46, 204, 113, 0.45);
+  animation: pulseAutojoinBtn 2s infinite ease-in-out;
+}
+
+.btn-autojoin:hover {
+  transform: scale(1.04);
+  box-shadow: 0 10px 28px rgba(46, 204, 113, 0.6);
+}
+
+@keyframes pulseAutojoinBtn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.room-code-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #d35400;
+}
+
+.room-code-value {
+  font-family: monospace, inherit;
+  font-size: 3.2rem;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: #2c3e50;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  user-select: all;
+}
+
+.copy-code-btn {
+  background: #ffffff;
+  border: 2px solid #f39c12;
+  color: #d35400;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.copy-code-btn:hover {
+  background: #f39c12;
+  color: #ffffff;
+}
+
+.copy-code-btn.copied {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #ffffff;
+}
+
+/* Waiting Indicator & Radar Animation */
+.waiting-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.radar-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f39c12;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spinRadar 0.9s infinite linear;
+}
+
+@keyframes spinRadar {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.waiting-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.lobby-actions-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 820px) {
+  .lobby-options-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .lobby-option-box {
+    min-height: auto;
+  }
+}
+
+.start-chef-icon {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #d35400;
+}
+
+.start-title,
+.pause-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #2c3e50;
+}
+
+.start-subtitle,
+.pause-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.start-game-btn,
+.resume-btn {
+  background: linear-gradient(135deg, #2ecc71, #00b894);
+  color: #ffffff;
+  font-weight: 800;
+  font-family: inherit;
+  font-size: 1.2rem;
+  border: none;
+  padding: 13px 36px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.start-game-btn:hover,
+.resume-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 26px rgba(46, 204, 113, 0.55);
+}
+
+.start-game-btn:active,
+.resume-btn:active {
+  transform: scale(0.96);
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 1024px) {
+  .furniture-stage {
+    padding: 0 8px 8px;
+  }
+  .wall-shelf-station { width: 230px; right: 20px; }
+  .furniture-fridge { width: 125px; height: 220px; }
+  .furniture-sink { width: 150px; height: 185px; }
+  .furniture-table { width: 240px; height: 195px; }
+  .furniture-cabinet { width: 135px; height: 215px; }
+  .furniture-box { width: 110px; height: 130px; }
+  .mission-text { font-size: 1.3rem; }
+}
+
+@media (max-width: 768px) {
+  .wall-shelf-station {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: 90%;
+    margin: 6px auto;
+  }
+  .furniture-stage {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    overflow-y: auto;
+  }
+  .furniture-fridge,
+  .furniture-sink,
+  .furniture-table,
+  .furniture-cabinet,
+  .furniture-box {
+    width: 45%;
+    height: 160px;
+  }
+  .mission-text { font-size: 1.1rem; }
+}

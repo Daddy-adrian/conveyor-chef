@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Conveyor Chef</title>
+  
+  <!-- Google Fonts: Fredoka & Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- GSAP Animation Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- PeerJS WebRTC DataChannel for 2-Laptop Symmetric Kitchen -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+  <div id="game-app" class="game-app">
+    <!-- Header Bar: Stats & Orders Banner -->
+    <header id="header-bar" class="header-bar">
+      <div class="header-stats">
+        <div class="xp-container" aria-label="XP Progress">
+          <div class="xp-header">
+            <span class="xp-label">👨‍🍳 Chef Level <span id="level-display">1</span></span>
+            <span id="xp-text" class="xp-text">0 / 100 XP</span>
+          </div>
+          <div class="xp-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="xp-progressbar">
+            <div id="xp-bar-fill" class="xp-bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="score-container" aria-live="polite">
+          <span class="score-label">⭐ Score</span>
+          <span id="score-display" class="score-value">0</span>
+        </div>
+
+        <!-- Real-Time Multiplayer Network Status Badge -->
+        <div id="network-badge" class="network-badge status-solo" aria-live="polite" aria-label="Kitchen Connection Status">
+          <span class="badge-dot" id="network-badge-dot">🟢</span>
+          <span id="network-badge-text">Solo</span>
+        </div>
+      </div>
+
+      <!-- Mission Display Container: Spans all over the top -->
+      <div id="mission-container" class="mission-container" aria-live="polite">
+        <button id="replay-audio-btn" class="replay-audio-btn" type="button" title="Listen to Order Again" aria-label="Listen to Order Again">
+          <svg class="btn-speaker-icon" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
+        <div class="mission-content">
+          <span class="mission-badge">🔔 Chef's Order</span>
+          <p id="mission-text" class="mission-text">Loading fresh mission...</p>
+          <div id="mission-progress" class="mission-progress">0 / 0 placed</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Play Area: Open 2D Contiguous Kitchen Room Scene -->
+    <main id="play-area" class="play-area">
+      <section id="kitchen-scene" class="kitchen-scene" aria-label="Kitchen Room">
+        <!-- Upper Half: Tiled Kitchen Wall & Warm Lighting -->
+        <div class="kitchen-wall" aria-hidden="true">
+          <div class="wall-tile-pattern"></div>
+          <div class="wall-ambient-light"></div>
+          <div class="wall-decor">
+            <div class="wall-clock">
+              <div class="clock-face">
+                <span class="clock-hand hand-hour"></span>
+                <span class="clock-hand hand-minute"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Perspective Horizon: Wooden Baseboard -->
+        <div class="room-baseboard" aria-hidden="true"></div>
+
+        <!-- Lower Half: Parquet Wood Flooring -->
+        <div class="kitchen-floor" aria-hidden="true">
+          <div class="parquet-pattern"></div>
+        </div>
+
+        <!-- Wall Mount Station: Large Kitchen Wall Shelf on Upper Right Wall -->
+        <div class="drop-zone wall-shelf-station" id="zone-shelf" data-zone-id="shelf" data-prepositions="on">
+          <div class="furniture-header-tab tab-shelf">
+            <span class="tab-title">on shelf</span>
+            <button class="zone-speak-btn" type="button" aria-label="Listen to Shelf" title="Listen">🔊</button>
+          </div>
+          <div class="shelf-board-construction">
+            <div class="shelf-items-surface">
+              <span class="shelf-ambience-jar">🧂</span>
+              <div class="zone-items" id="zone-items-shelf"></div>
+              <span class="shelf-ambience-jar">🌿</span>
+              <span class="shelf-ambience-jar">🫒</span>
+            </div>
+            <div class="shelf-wooden-plank"></div>
+            <div class="shelf-brackets-row">
+              <div class="shelf-bracket bracket-left"></div>
+              <div class="shelf-bracket bracket-right"></div>
+            </div>
+          </div>
+        </div>
+          <div class="parquet-pattern"></div>
+        </div>
+
+        <!-- CONTIGUOUS FURNITURE STAGE (Anchored onto the floor) -->
+        <div class="furniture-stage" id="furniture-stage">
+
+          <!-- 1. LEFT: Tall Stainless-Steel Refrigerator (into) -->
+          <div class="drop-zone furniture-piece furniture-fridge" id="zone-fridge" data-zone-id="fridge" data-prepositions="into">
+            <div class="furniture-header-tab tab-fridge">
+              <span class="tab-title">into fridge</span>
+              <button class="zone-speak-btn" type="button" aria-label="Listen to Fridge" title="Listen">🔊</button>
+            </div>
+            <div class="fridge-cabinet-3d">
+              <!-- Inner Cavity with glowing light and silhouettes -->
+              <div class="fridge-interior">
+                <div class="fridge-interior-light"></div>
+                <div class="fridge-shelf-line shelf-1">
+                  <span class="silhouette-food">🥛</span>
+                  <span class="silhouette-food">🧀</span>
+                </div>
+                <!-- Main drop items slot -->
+                <div class="zone-items" id="zone-items-fridge"></div>
+                <div class="fridge-shelf-line shelf-2">
+                  <span class="silhouette-food">🥬</span>
+                  <span class="silhouette-food">🍇</span>
+                </div>
+              </div>
+              <!-- 3D Swinging Front Door -->
+              <div class="fridge-door-pivot">
+                <div class="fridge-door-panel">
+                  <div class="freezer-compartment">
+                    <div class="digital-temp-gauge">37°F ❄️</div>
+                  </div>
+                  <div class="fridge-main-door">
+                    <div class="water-dispenser-recess"></div>
+                    <div class="long-metallic-handle"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="floor-shadow fridge-shadow"></div>
+          </div>
+
+          <!-- 2. LEFT-CENTER: Kitchen Counter with Sink (in) -->
+          <div class="drop-zone furniture-piece furniture-sink" id="zone-sink" data-zone-id="sink" data-prepositions="in">
+            <div class="furniture-header-tab tab-sink">
+              <span class="tab-title">in sink</span>
+              <button class="zone-speak-btn" type="button" aria-label="Listen to Sink" title="Listen">🔊</button>
+            </div>
+            <div class="counter-assembly">
+              <div class="granite-countertop">
+                <!-- Gooseneck Faucet -->
+                <div class="faucet-fixture">
+                  <svg class="gooseneck-svg" viewBox="0 0 80 70" width="68" height="58">
+                    <path d="M 16 64 L 16 34 Q 16 8 38 8 Q 58 8 58 28 L 58 38" fill="none" stroke="#bdc3c7" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M 16 64 L 16 34 Q 16 8 38 8 Q 58 8 58 28 L 58 38" fill="none" stroke="#ecf0f1" stroke-width="3" stroke-linecap="round"/>
+                    <rect x="54" y="36" width="8" height="5" fill="#7f8c8d" rx="2"/>
+                    <circle class="water-drop-anim" cx="58" cy="46" r="3" fill="#3498db"/>
+                    <circle cx="8" cy="62" r="5" fill="#e74c3c"/>
+                    <circle cx="24" cy="62" r="5" fill="#3498db"/>
+                  </svg>
+                </div>
+                <!-- Recessed Stainless Washbasin -->
+                <div class="stainless-basin">
+                  <div class="basin-drain-ring"></div>
+                  <div class="zone-items" id="zone-items-sink"></div>
+                </div>
+              </div>
+              <div class="counter-cupboard-base">
+                <div class="counter-drawer-row">
+                  <span class="drawer-handle"></span>
+                  <span class="drawer-handle"></span>
+                </div>
+                <div class="under-sink-cupboards">
+                  <div class="sink-cupboard-door door-left"><span class="small-knob"></span></div>
+                  <div class="sink-cupboard-door door-right"><span class="small-knob"></span></div>
+                </div>
+              </div>
+            </div>
+            <div class="floor-shadow counter-shadow"></div>
+          </div>
+
+          <!-- 3. CENTER: Table Unit (Contains ON table, IN plate, and UNDER table) -->
+          <div class="furniture-piece furniture-table" id="table-complex">
+            <div class="table-construction">
+              <!-- DROP ZONE 1: ON THE TABLE (Tabletop surface) -->
+              <div class="drop-zone tabletop-beveled-slab" id="zone-table_on" data-zone-id="table_on" data-prepositions="on">
+                <div class="furniture-header-tab tab-table-on">
+                  <span class="tab-title">on table</span>
+                  <button class="zone-speak-btn" type="button" aria-label="Listen to Table" title="Listen">🔊</button>
+                </div>
+                <div class="tabletop-runner"></div>
+                
+                <!-- Items dropped 'on' the table -->
+                <div class="zone-items tabletop-items-container" id="zone-items-table_on"></div>
+
+                <!-- DROP ZONE 2: ON THE PLATE (Resting on the tabletop) -->
+                <div class="drop-zone embedded-plate-zone" id="zone-plate" data-zone-id="plate" data-prepositions="on">
+                  <div class="furniture-header-tab tab-plate">
+                    <span class="tab-title">on plate</span>
+                    <button class="zone-speak-btn" type="button" aria-label="Listen to Plate" title="Listen">🔊</button>
+                  </div>
+                  <div class="bistro-checkered-placemat">
+                    <div class="mini-cutlery mini-fork"></div>
+                    <div class="fine-china-plate">
+                      <div class="gold-rimmed-edge">
+                        <div class="platter-well-center">
+                          <div class="zone-items" id="zone-items-plate"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mini-cutlery mini-knife"></div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- DROP ZONE 3: UNDER THE TABLE (Between the legs on the floor) -->
+              <div class="table-legs-chassis">
+                <div class="sturdy-table-leg leg-l"></div>
+                <div class="drop-zone under-table-drop-area" id="zone-table_under" data-zone-id="table_under" data-prepositions="under">
+                  <div class="furniture-header-tab tab-table-under">
+                    <span class="tab-title">under table</span>
+                    <button class="zone-speak-btn" type="button" aria-label="Listen to Under Table" title="Listen">🔊</button>
+                  </div>
+                  <div class="zone-items-under-sub" id="zone-items-table_under"></div>
+                </div>
+                <div class="sturdy-table-leg leg-r"></div>
+              </div>
+            </div>
+            <div class="floor-shadow table-shadow"></div>
+          </div>
+
+          <!-- 4. RIGHT: Tall White Pantry Cabinet (Has IN cabinet & BEHIND cabinet) -->
+          <div class="furniture-piece furniture-cabinet" id="cabinet-complex">
+            
+            <!-- DROP ZONE 1: BEHIND THE CABINET (Depth shadow target area) -->
+            <div class="drop-zone cabinet-behind-drop-area" id="zone-cabinet_behind" data-zone-id="cabinet_behind" data-prepositions="behind">
+              <div class="furniture-header-tab tab-cabinet-behind">
+                <span class="tab-title">behind cabinet</span>
+                <button class="zone-speak-btn" type="button" aria-label="Listen to Behind Cabinet" title="Listen">🔊</button>
+              </div>
+              <div class="behind-cabinet-shadow-cavity">
+                <div class="zone-items" id="zone-items-cabinet_behind"></div>
+              </div>
+            </div>
+
+            <!-- DROP ZONE 2: IN THE CABINET (Pantry doors open and close) -->
+            <div class="drop-zone cabinet-pantry-3d" id="zone-cabinet_in" data-zone-id="cabinet_in" data-prepositions="in">
+              <div class="furniture-header-tab tab-cabinet-in">
+                <span class="tab-title">in cabinet</span>
+                <button class="zone-speak-btn" type="button" aria-label="Listen to In Cabinet" title="Listen">🔊</button>
+              </div>
+              <div class="cabinet-top-cornice"></div>
+              <!-- Inner Cavity with shelves -->
+              <div class="cabinet-inner-cavity">
+                <div class="pantry-shelf-row shelf-high">
+                  <span class="pantry-silhouette">🫙</span>
+                  <span class="pantry-silhouette">🥫</span>
+                </div>
+                <div class="zone-items" id="zone-items-cabinet_in"></div>
+                <div class="pantry-shelf-row shelf-low">
+                  <span class="pantry-silhouette">🌾</span>
+                  <span class="pantry-silhouette">🍯</span>
+                </div>
+              </div>
+
+              <!-- Double Shaker Doors that swing open outward -->
+              <div class="cabinet-shaker-doors">
+                <div class="shaker-door-half door-left">
+                  <div class="recessed-inner-panel"></div>
+                  <div class="brass-door-knob knob-left"></div>
+                </div>
+                <div class="shaker-door-half door-right">
+                  <div class="recessed-inner-panel"></div>
+                  <div class="brass-door-knob knob-right"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="floor-shadow cabinet-shadow"></div>
+          </div>
+
+          <!-- 5. FLOOR: Cardboard Delivery Box (Only IN) -->
+          <div class="drop-zone furniture-piece furniture-box" id="zone-box" data-zone-id="box" data-prepositions="in">
+            <div class="furniture-header-tab tab-box">
+              <span class="tab-title">in box</span>
+              <button class="zone-speak-btn" type="button" aria-label="Listen to Box" title="Listen">🔊</button>
+            </div>
+
+            <div class="delivery-box-3d">
+              <!-- 3D Folding Flaps -->
+              <div class="box-flap flap-rear"></div>
+              <div class="box-flap flap-left"></div>
+              <div class="box-flap flap-right"></div>
+              
+              <!-- Box Interior -->
+              <div class="box-inner-basket">
+                <div class="zone-items" id="zone-items-box"></div>
+              </div>
+
+              <div class="box-front-panel">
+                <div class="box-tape-strip"></div>
+                <div class="box-shipping-stamp">FRAGILE ⬆️</div>
+                <div class="box-flap flap-front"></div>
+              </div>
+            </div>
+            <div class="floor-shadow box-shadow"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Authentic Restaurant Conveyor Belt Lane -->
+      <section id="conveyor-section" class="conveyor-section" aria-label="Restaurant Conveyor Belt">
+        <!-- Safety Hazard Stripe Border -->
+        <div class="conveyor-hazard-strip"></div>
+        
+        <div class="conveyor-chassis">
+          <!-- Left Industrial Gear SVG -->
+          <div class="gear-casing gear-left" aria-hidden="true">
+            <svg class="conveyor-gear gear-svg" viewBox="0 0 100 100" width="60" height="60">
+              <circle cx="50" cy="50" r="42" fill="#2d3436" stroke="#f39c12" stroke-width="4"/>
+              <circle cx="50" cy="50" r="28" fill="#636e72"/>
+              <circle cx="50" cy="50" r="10" fill="#2d3436"/>
+              <!-- Teeth -->
+              <rect x="45" y="2" width="10" height="12" fill="#f39c12" rx="2"/>
+              <rect x="45" y="86" width="10" height="12" fill="#f39c12" rx="2"/>
+              <rect x="2" y="45" width="12" height="10" fill="#f39c12" rx="2"/>
+              <rect x="86" y="45" width="12" height="10" fill="#f39c12" rx="2"/>
+              <rect x="15" y="15" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(45 20 21)"/>
+              <rect x="75" y="75" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(45 80 81)"/>
+              <rect x="15" y="75" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(-45 20 81)"/>
+              <rect x="75" y="15" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(-45 80 21)"/>
+            </svg>
+          </div>
+
+          <!-- Main Belt Lane -->
+          <div id="conveyor-belt" class="conveyor-belt">
+            <div id="conveyor-track" class="conveyor-track"></div>
+            <div id="conveyor-items" class="conveyor-items"></div>
+          </div>
+
+          <!-- Right Industrial Gear SVG -->
+          <div class="gear-casing gear-right" aria-hidden="true">
+            <svg class="conveyor-gear gear-svg" viewBox="0 0 100 100" width="60" height="60">
+              <circle cx="50" cy="50" r="42" fill="#2d3436" stroke="#f39c12" stroke-width="4"/>
+              <circle cx="50" cy="50" r="28" fill="#636e72"/>
+              <circle cx="50" cy="50" r="10" fill="#2d3436"/>
+              <!-- Teeth -->
+              <rect x="45" y="2" width="10" height="12" fill="#f39c12" rx="2"/>
+              <rect x="45" y="86" width="10" height="12" fill="#f39c12" rx="2"/>
+              <rect x="2" y="45" width="12" height="10" fill="#f39c12" rx="2"/>
+              <rect x="86" y="45" width="12" height="10" fill="#f39c12" rx="2"/>
+              <rect x="15" y="15" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(45 20 21)"/>
+              <rect x="75" y="75" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(45 80 81)"/>
+              <rect x="15" y="75" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(-45 20 81)"/>
+              <rect x="75" y="15" width="10" height="12" fill="#f39c12" rx="2" transform="rotate(-45 80 21)"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="conveyor-bottom-casing">
+          <div class="rivets-row">
+            <span class="rivet"></span><span class="rivet"></span><span class="rivet"></span>
+            <span class="rivet"></span><span class="rivet"></span><span class="rivet"></span>
+            <span class="rivet"></span><span class="rivet"></span><span class="rivet"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Floating Bottom-Corner Kitchen Control Panel -->
+    <aside id="control-panel" class="control-panel" aria-label="Kitchen Controls">
+      <div class="control-header">
+        <span class="control-title">🍳 Kitchen Settings</span>
+      </div>
+      <div class="control-group">
+        <label for="volume-slider" class="control-label">
+          <span>🔊 Chef Audio</span>
+          <span id="volume-value">80%</span>
+        </label>
+        <input
+          type="range"
+          id="volume-slider"
+          class="control-slider"
+          min="0"
+          max="1"
+          step="0.05"
+          value="0.8"
+        />
+      </div>
+
+      <div class="control-group">
+        <label for="speed-slider" class="control-label">
+          <span>⚙️ Belt Speed</span>
+          <span id="speed-value">1.0x</span>
+        </label>
+        <input
+          type="range"
+          id="speed-slider"
+          class="control-slider"
+          min="0"
+          max="2.5"
+          step="0.25"
+          value="1"
+        />
+      </div>
+
+      <button id="play-pause-btn" class="play-pause-btn" type="button" aria-pressed="false">
+        ⏸️ Pause Kitchen
+      </button>
+    </aside>
+
+    <!-- Start / Multiplayer Lobby Modal Overlay -->
+    <div id="start-overlay" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="lobby-title">
+      <div class="lobby-card">
+        <!-- 1. Main Lobby View: Mode Selection -->
+        <div id="lobby-options-view" class="lobby-view">
+          <div class="start-chef-icon" aria-hidden="true">👨‍🍳 The Conveyor Chef</div>
+          <h1 id="lobby-title" class="start-title">Welcome to the Kitchen!</h1>
+          <p class="start-subtitle">Play solo or team up with a sous-chef on another laptop in real time!</p>
+          
+          <div class="lobby-options-grid">
+            <!-- Option 1: Play Solo -->
+            <div class="lobby-option-box">
+              <div class="option-icon">🍳</div>
+              <h3 class="option-title">Play Solo</h3>
+              <p class="option-desc">Practice prep orders and master prepositions by yourself on this laptop.</p>
+              <button id="lobby-solo-btn" class="lobby-btn btn-solo" type="button">
+                Start Solo Game
+              </button>
+            </div>
+
+            <!-- Option 2: Host Kitchen -->
+            <div class="lobby-option-box highlight-box">
+              <div class="option-badge">Co-op Host</div>
+              <div class="option-icon">📡</div>
+              <h3 class="option-title">Host Kitchen</h3>
+              <p class="option-desc">Create a room code and invite your partner laptop to join your kitchen.</p>
+              <button id="lobby-host-btn" class="lobby-btn btn-host" type="button">
+                Host Room
+              </button>
+            </div>
+
+            <!-- Option 3: Join Kitchen -->
+            <div class="lobby-option-box">
+              <div class="option-icon">🤝</div>
+              <h3 class="option-title">Join Kitchen</h3>
+              <p class="option-desc">Enter the 4-letter room code displayed on your partner's laptop.</p>
+              <div class="join-input-group">
+                <input 
+                  type="text" 
+                  id="lobby-join-input" 
+                  class="lobby-code-input" 
+                  maxlength="4" 
+                  placeholder="CODE" 
+                  autocomplete="off" 
+                  autocapitalize="characters"
+                  spellcheck="false"
+                />
+                <button id="lobby-join-btn" class="lobby-btn btn-join" type="button">
+                  Connect
+                </button>
+              </div>
+              <div id="lobby-join-error" class="lobby-error-msg hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Sub-View: Host Waiting For Sous-Chef -->
+        <div id="lobby-host-view" class="lobby-view hidden">
+          <div class="start-chef-icon" aria-hidden="true">📡 Room Created!</div>
+          <h2 class="start-title">Waiting for Sous-Chef to Join...</h2>
+          <p class="start-subtitle">Invite your partner with a 1-click WhatsApp link or room code:</p>
+          
+          <!-- 1-Click WhatsApp Shareable Invite Link -->
+          <div class="whatsapp-invite-card">
+            <div class="invite-header-line">
+              <span class="invite-badge">💬 1-Click WhatsApp Invite</span>
+              <span class="room-code-badge">Room: <strong id="host-room-code-badge">CHEF</strong></span>
+            </div>
+
+            <div class="invite-link-row">
+              <input 
+                type="text" 
+                id="host-invite-link-input" 
+                class="invite-link-input" 
+                readonly 
+                value="" 
+                title="1-Click Shareable Link"
+              />
+            </div>
+
+            <div class="invite-buttons-row">
+              <button id="host-copy-whatsapp-btn" class="lobby-btn btn-whatsapp" type="button">
+                <span>📋 Copy WhatsApp Invite Link</span>
+              </button>
+              <a id="host-open-whatsapp-btn" class="lobby-btn btn-wa-direct" href="#" target="_blank" rel="noopener noreferrer">
+                <span>💬 Open in WhatsApp</span>
+              </a>
+            </div>
+
+            <div id="host-whatsapp-feedback" class="copy-feedback-toast hidden">
+              ✅ Copied! Send this link via WhatsApp
+            </div>
+          </div>
+
+          <!-- Room Code Backup Card -->
+          <div class="room-code-display-card">
+            <span class="room-code-label">OR ENTER 4-LETTER CODE</span>
+            <div class="room-code-value" id="host-room-code-display">CHEF</div>
+            <button id="host-copy-btn" class="copy-code-btn" type="button" title="Copy Room Code">
+              📋 Copy Code Only
+            </button>
+          </div>
+
+          <div class="waiting-indicator">
+            <div class="radar-spinner"></div>
+            <span class="waiting-text">Ready for incoming WebRTC connection...</span>
+          </div>
+
+          <div class="lobby-actions-row">
+            <button id="host-start-solo-btn" class="lobby-btn btn-secondary" type="button">
+              Play Solo Instead
+            </button>
+            <button id="host-cancel-btn" class="lobby-btn btn-secondary" type="button">
+              Back to Menu
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Sub-View: Client Connecting to Host (Manual Code) -->
+        <div id="lobby-client-view" class="lobby-view hidden">
+          <div class="start-chef-icon" aria-hidden="true">🔄 Connecting...</div>
+          <h2 class="start-title">Connecting to Kitchen</h2>
+          <p class="start-subtitle">Joining kitchen room <strong id="client-target-code-display">CHEF</strong>...</p>
+
+          <div class="waiting-indicator">
+            <div class="radar-spinner"></div>
+            <span class="waiting-text">Establishing symmetric WebRTC peer connection...</span>
+          </div>
+
+          <div id="client-error-box" class="lobby-error-box hidden">
+            <span id="client-error-text">Failed to connect to room. Please check the code and try again.</span>
+          </div>
+
+          <div class="lobby-actions-row">
+            <button id="client-cancel-btn" class="lobby-btn btn-secondary" type="button">
+              Cancel & Go Back
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Sub-View: 1-Click Auto-Join Landing (via WhatsApp Link) -->
+        <div id="lobby-autojoin-view" class="lobby-view hidden">
+          <div class="start-chef-icon" aria-hidden="true">👨‍🍳 Kitchen Invite!</div>
+          <h2 class="start-title">You're Invited to Cook!</h2>
+          <p class="start-subtitle">Partnering up with host kitchen room <strong id="autojoin-code-display">CHEF</strong></p>
+
+          <div class="autojoin-card">
+            <div class="autojoin-icon">🍳</div>
+            <p class="autojoin-note">Tap below to unlock kitchen audio and jump into the shared kitchen in real time!</p>
+            <button id="autojoin-start-btn" class="lobby-btn btn-autojoin" type="button">
+              🚀 Tap to Start Cooking!
+            </button>
+          </div>
+
+          <div id="autojoin-status" class="waiting-indicator">
+            <div class="radar-spinner"></div>
+            <span id="autojoin-status-text" class="waiting-text">Connecting to Chef's Kitchen...</span>
+          </div>
+
+          <div id="autojoin-error-box" class="lobby-error-box hidden">
+            <span id="autojoin-error-text">Could not connect to room. The kitchen may have closed.</span>
+          </div>
+
+          <div class="lobby-actions-row">
+            <button id="autojoin-solo-btn" class="lobby-btn btn-secondary" type="button">
+              Play Solo Instead
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAUSED Screen Overlay -->
+    <div id="pause-overlay" class="pause-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+      <div class="pause-card">
+        <h2 id="pause-title" class="pause-title">KITCHEN PAUSED</h2>
+        <p class="pause-subtitle">The orders and conveyor belt are taking a short break!</p>
+        <button id="resume-btn" class="resume-btn" type="button">
+          ▶️ Resume Cooking
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
